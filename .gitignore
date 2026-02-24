@@ -1,0 +1,23 @@
+## Ignore build and output directories
+bin/
+obj/
+out/
+
+## Ignore VS/IDE files
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Ignore NuGet packages
+packages/
+*.nupkg
+
+## Ignore Docker artifacts
+*.tar
+
+## Ignore OS files
+.DS_Store
+Thumbs.db

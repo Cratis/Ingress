@@ -1,0 +1,89 @@
+name: Publish
+
+env:
+  DOTNET_VERSION: "10.0.x"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        default: '0.0.0'
+        type: string
+      release-notes:
+        description: 'Release notes'
+        required: true
+        default: 'No release notes'
+        type: string
+  push:
+    branches:
+      - "main"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      publish: ${{ steps.release.outputs.should-publish }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Release
+        id: release
+        uses: cratis/release-action@v1
+        with:
+          version: ${{ github.event.inputs.version }}
+          release-notes: ${{ github.event.inputs.release-notes }}
+
+  publish:
+    if: needs.release.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    needs: [release]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Publish
+        run: dotnet publish Source/Ingress/Ingress.csproj --configuration Release -o Source/Ingress/out
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Docker/Development/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            cratis/ingress:${{ needs.release.outputs.version }}
+            cratis/ingress:latest
+          build-args: |
+            VERSION=${{ needs.release.outputs.version }}
