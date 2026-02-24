@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Source/">
     <Project Path="Source/Ingress/Ingress.csproj" />
+    <Project Path="Source/Ingress.Specs/Ingress.Specs.csproj" />
   </Folder>
 </Solution>
