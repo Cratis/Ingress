@@ -12,4 +12,9 @@ public static class Cookies
     /// Cookie holding the enriched identity details from the application's identity provider endpoint.
     /// </summary>
     public const string Identity = ".cratis-identity";
+
+    /// <summary>
+    /// Short-lived HTTP-only cookie used to carry the invite token across the OIDC redirect.
+    /// </summary>
+    public const string InviteToken = ".cratis-invite";
 }

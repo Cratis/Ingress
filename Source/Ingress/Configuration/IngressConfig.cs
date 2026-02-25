@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Ingress.Invites;
+
 namespace Cratis.Ingress.Configuration;
 
 /// <summary>
@@ -8,6 +10,12 @@ namespace Cratis.Ingress.Configuration;
 /// </summary>
 public class IngressConfig
 {
+    /// <summary>
+    /// Gets or sets the invite system configuration.
+    /// Set this section to enable invite-based onboarding.
+    /// </summary>
+    public InviteConfig? Invite { get; set; }
+
     /// <summary>
     /// Gets or sets the <see cref="TenantsConfig"/>.
     /// Tenants are keyed by tenant ID (GUID).

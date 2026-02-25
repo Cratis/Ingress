@@ -4,6 +4,7 @@
 using Cratis.Ingress;
 using Cratis.Ingress.Configuration;
 using Cratis.Ingress.Identity;
+using Cratis.Ingress.Invites;
 using Cratis.Ingress.ReverseProxy;
 using Cratis.Ingress.Tenancy;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -78,6 +79,9 @@ builder.Services.AddSingleton<ITenantResolver, TenantResolver>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IIdentityDetailsResolver, IdentityDetailsResolver>();
 
+// ── Invites ────────────────────────────────────────────────────────────────
+builder.Services.AddSingleton<IInviteTokenValidator, InviteTokenValidator>();
+
 // ── Reverse proxy ──────────────────────────────────────────────────────────
 builder.SetupReverseProxy();
 
@@ -95,6 +99,10 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// InviteMiddleware handles the /invite/{token} path and exchanges pending invite
+// tokens with Studio after a successful OIDC login.
+app.UseMiddleware<InviteMiddleware>();
 
 // TenancyMiddleware strips spoofable inbound headers, resolves the tenant and
 // calls /.cratis/me to enrich the identity cookie – runs after auth so the
