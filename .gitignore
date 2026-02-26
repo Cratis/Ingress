@@ -21,3 +21,7 @@ packages/
 ## Ignore OS files
 .DS_Store
 Thumbs.db
+
+## Ignore frontend build artifacts
+**/wwwroot/
+**/node_modules/

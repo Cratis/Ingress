@@ -4,7 +4,36 @@
 # Cratis Ingress
 # Build runtime image.
 ####################################
-FROM mcr.microsoft.com/dotnet/runtime:10.0-noble
+
+# ── Stage 1: Build the frontend (Web) ─────────────────────────────────────
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /src
+# Copy Web source and Ingress destination so the relative output path works
+COPY Source/Web/ ./Web/
+COPY Source/Ingress/ ./Ingress/
+
+WORKDIR /src/Web
+RUN npm ci && npm run build
+
+# ── Stage 2: Build the .NET backend ────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS backend-builder
+ARG VERSION
+
+WORKDIR /build
+
+COPY Directory.Build.props Directory.Packages.props ./
+COPY Source/Ingress/ ./Source/Ingress/
+# Copy the compiled frontend assets into the wwwroot directory
+COPY --from=frontend-builder /src/Ingress/wwwroot ./Source/Ingress/wwwroot
+
+RUN dotnet publish Source/Ingress/Ingress.csproj \
+    -c Release \
+    -o /out \
+    /p:Version=${VERSION:-0.0.0}
+
+# ── Stage 3: Runtime image ─────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 ARG VERSION
 
 RUN echo Version = ${VERSION}
@@ -22,6 +51,6 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 WORKDIR /app
 
-COPY ./Source/Ingress/out ./
+COPY --from=backend-builder /out ./
 
 ENTRYPOINT ["/usr/bin/tini", "--", "dotnet", "/app/Ingress.dll"]
