@@ -51,4 +51,27 @@ public class InviteTokenValidator(IOptionsMonitor<IngressConfig> config) : IInvi
         var result = handler.ValidateTokenAsync(token, parameters).GetAwaiter().GetResult();
         return result.IsValid;
     }
+
+    /// <inheritdoc/>
+    public bool TryGetClaim(string token, string claimType, out string claimValue)
+    {
+        claimValue = string.Empty;
+        try
+        {
+            var handler = new JsonWebTokenHandler();
+            var jwt = handler.ReadJsonWebToken(token);
+            var claim = jwt.Claims.FirstOrDefault(c => c.Type == claimType);
+            if (claim is not null)
+            {
+                claimValue = claim.Value;
+                return true;
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Token is null, empty, or not a well-formed JWT.
+        }
+
+        return false;
+    }
 }
