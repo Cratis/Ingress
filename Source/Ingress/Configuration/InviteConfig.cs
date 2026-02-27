@@ -32,6 +32,15 @@ public class InviteConfig
     public string ExchangeUrl { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the claim name in the invite token that holds the tenant ID.
+    /// When set, a tenant-issued invite is recognized when this claim's value matches
+    /// the resolved tenant. If they match the invite bypasses the lobby redirect and
+    /// the user proceeds directly to the microservice.
+    /// Leave empty to disable tenant-issued invite detection.
+    /// </summary>
+    public string TenantClaim { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the lobby microservice configuration.
     /// When set, requests from users without a resolved tenant are forwarded to this microservice's frontend,
     /// and users are redirected here after a successful invite exchange.

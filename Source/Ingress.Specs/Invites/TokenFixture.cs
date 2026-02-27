@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -32,7 +33,8 @@ static class TokenFixture
         string issuer = "test-issuer",
         string audience = "test-audience",
         DateTime? expires = null,
-        DateTime? notBefore = null)
+        DateTime? notBefore = null,
+        IEnumerable<Claim>? additionalClaims = null)
     {
         var handler = new JsonWebTokenHandler();
         var descriptor = new SecurityTokenDescriptor
@@ -42,6 +44,7 @@ static class TokenFixture
             Expires = expires ?? DateTime.UtcNow.AddHours(1),
             NotBefore = notBefore ?? DateTime.UtcNow.AddMinutes(-1),
             SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.RsaSha256),
+            Claims = additionalClaims?.ToDictionary(c => c.Type, c => (object)c.Value),
         };
         return handler.CreateToken(descriptor);
     }

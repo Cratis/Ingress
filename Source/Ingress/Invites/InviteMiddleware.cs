@@ -78,9 +78,17 @@ public class InviteMiddleware(
             context.Response.Cookies.Delete(Cookies.InviteToken);
 
             // After a successful exchange redirect the user to the lobby so they
-            // can enter the application with their newly assigned tenant.
+            // can enter the application with their newly assigned tenant – unless
+            // the invite is a tenant-issued invite that matches the resolved tenant,
+            // in which case the user passes directly through to the microservice.
             if (exchangeSucceeded)
             {
+                if (IsTenantIssuedInvite(inviteToken, context))
+                {
+                    await next(context);
+                    return;
+                }
+
                 var lobbyUrl = config.CurrentValue.Invite?.Lobby?.Frontend?.BaseUrl;
                 if (!string.IsNullOrWhiteSpace(lobbyUrl))
                 {
@@ -133,5 +141,32 @@ public class InviteMiddleware(
 
         logger.LogInformation("Invite exchanged successfully for subject {Subject}.", subject);
         return true;
+    }
+
+    bool IsTenantIssuedInvite(string inviteToken, HttpContext context)
+    {
+        var tenantClaim = config.CurrentValue.Invite?.TenantClaim;
+        if (string.IsNullOrEmpty(tenantClaim))
+        {
+            return false;
+        }
+
+        if (!tokenValidator.TryGetClaim(inviteToken, tenantClaim, out var tokenTenantIdStr))
+        {
+            return false;
+        }
+
+        if (!Guid.TryParse(tokenTenantIdStr, out var tokenTenantId))
+        {
+            return false;
+        }
+
+        if (!context.Items.TryGetValue(TenancyMiddleware.TenantIdItemKey, out var resolvedTenantObj)
+            || resolvedTenantObj is not Guid resolvedTenantId)
+        {
+            return false;
+        }
+
+        return tokenTenantId != Guid.Empty && tokenTenantId == resolvedTenantId;
     }
 }

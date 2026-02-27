@@ -14,4 +14,13 @@ public interface IInviteTokenValidator
     /// <param name="token">The raw JWT string to validate.</param>
     /// <returns><c>true</c> if the token is valid; otherwise <c>false</c>.</returns>
     bool Validate(string token);
+
+    /// <summary>
+    /// Reads the value of a named claim directly from the token payload without re-validating the signature.
+    /// </summary>
+    /// <param name="token">The raw JWT string.</param>
+    /// <param name="claimType">The claim type to look up.</param>
+    /// <param name="claimValue">The claim value if found; empty string otherwise.</param>
+    /// <returns><c>true</c> if the claim was found; otherwise <c>false</c>.</returns>
+    bool TryGetClaim(string token, string claimType, out string claimValue);
 }
