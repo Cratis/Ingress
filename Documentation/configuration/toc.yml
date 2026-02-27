@@ -1,0 +1,10 @@
+- name: Configuration
+  href: index.md
+- name: Authentication
+  href: authentication.md
+- name: Tenancy
+  href: tenancy.md
+- name: Microservices
+  href: microservices.md
+- name: Invites & Lobby
+  href: invites.md

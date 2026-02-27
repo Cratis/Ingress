@@ -30,5 +30,11 @@ public static class WellKnownPaths
     /// Unauthenticated users are redirected here when multiple providers are configured.
     /// </summary>
     public const string LoginPage = "/.cratis/select-provider";
+
+    /// <summary>
+    /// The well-known path prefix that triggers invite-token handling.
+    /// Append the token to complete the URL (e.g. <c>/invite/&lt;token&gt;</c>).
+    /// </summary>
+    public const string InvitePathPrefix = "/invite";
 }
 

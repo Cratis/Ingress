@@ -31,7 +31,7 @@ public class InviteMiddleware(
     ILogger<InviteMiddleware> logger)
 {
     /// <summary>The route prefix that triggers invite handling.</summary>
-    public const string InvitePathPrefix = "/invite";
+    public const string InvitePathPrefix = WellKnownPaths.InvitePathPrefix;
 
     /// <inheritdoc cref="IMiddleware.InvokeAsync"/>
     public async Task InvokeAsync(HttpContext context)
@@ -71,23 +71,35 @@ public class InviteMiddleware(
         if (context.User.Identity?.IsAuthenticated == true
             && context.Request.Cookies.TryGetValue(Cookies.InviteToken, out var inviteToken))
         {
-            await ExchangeInvite(context, inviteToken);
+            var exchangeSucceeded = await ExchangeInvite(context, inviteToken);
 
             // Always delete the invite cookie regardless of exchange outcome so
             // the user is never stuck in a retry loop.
             context.Response.Cookies.Delete(Cookies.InviteToken);
+
+            // After a successful exchange redirect the user to the lobby so they
+            // can enter the application with their newly assigned tenant.
+            if (exchangeSucceeded)
+            {
+                var lobbyUrl = config.CurrentValue.Invite?.Lobby?.Frontend?.BaseUrl;
+                if (!string.IsNullOrWhiteSpace(lobbyUrl))
+                {
+                    context.Response.Redirect(lobbyUrl);
+                    return;
+                }
+            }
         }
 
         await next(context);
     }
 
-    async Task ExchangeInvite(HttpContext context, string inviteToken)
+    async Task<bool> ExchangeInvite(HttpContext context, string inviteToken)
     {
         var exchangeUrl = config.CurrentValue.Invite?.ExchangeUrl;
         if (string.IsNullOrWhiteSpace(exchangeUrl))
         {
             logger.LogWarning("Invite exchange URL is not configured – skipping invite exchange.");
-            return;
+            return false;
         }
 
         var subject = context.User.FindFirst("sub")?.Value
@@ -107,7 +119,7 @@ public class InviteMiddleware(
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to call invite exchange endpoint at {Url}.", exchangeUrl);
-            return;
+            return false;
         }
 
         if (!response.IsSuccessStatusCode)
@@ -116,10 +128,10 @@ public class InviteMiddleware(
                 "Invite exchange endpoint returned {StatusCode} for subject {Subject}.",
                 response.StatusCode,
                 subject);
+            return false;
         }
-        else
-        {
-            logger.LogInformation("Invite exchanged successfully for subject {Subject}.", subject);
-        }
+
+        logger.LogInformation("Invite exchanged successfully for subject {Subject}.", subject);
+        return true;
     }
 }
