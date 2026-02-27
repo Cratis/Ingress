@@ -156,14 +156,15 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// TenancyMiddleware strips spoofable inbound headers, resolves the tenant and
+// calls /.cratis/me to enrich the identity cookie – runs after auth so the
+// ClaimsPrincipal is available. Tenancy must be resolved before the invite
+// system so the lobby redirect can be applied when no tenant is found.
+app.UseMiddleware<TenancyMiddleware>();
+
 // InviteMiddleware handles the /invite/{token} path and exchanges pending invite
 // tokens with Studio after a successful OIDC login.
 app.UseMiddleware<InviteMiddleware>();
-
-// TenancyMiddleware strips spoofable inbound headers, resolves the tenant and
-// calls /.cratis/me to enrich the identity cookie – runs after auth so the
-// ClaimsPrincipal is available.
-app.UseMiddleware<TenancyMiddleware>();
 
 // ── OIDC providers endpoint ────────────────────────────────────────────────
 // Returns a JSON array of OidcProviderInfo objects that the login page uses to

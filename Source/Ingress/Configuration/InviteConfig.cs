@@ -1,7 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Ingress.Invites;
+namespace Cratis.Ingress.Configuration;
 
 /// <summary>
 /// Represents the configuration for the invite system.
@@ -30,4 +30,11 @@ public class InviteConfig
     /// e.g. <c>https://studio.example.com/internal/invites/exchange</c>.
     /// </summary>
     public string ExchangeUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the lobby microservice configuration.
+    /// When set, requests from users without a resolved tenant are forwarded to this microservice's frontend,
+    /// and users are redirected here after a successful invite exchange.
+    /// </summary>
+    public MicroserviceConfig? Lobby { get; set; }
 }

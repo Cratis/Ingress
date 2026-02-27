@@ -36,6 +36,19 @@ public class TenancyMiddleware(
         // 2. Resolve tenant.
         if (!tenantResolver.TryResolve(context, out var tenantId))
         {
+            // If a lobby is configured, redirect users without a resolved tenant to the lobby
+            // frontend – unless this is an invite path (handled by InviteMiddleware) or the
+            // user already has a pending invite cookie (so the Phase 2 exchange can proceed).
+            var lobbyUrl = config.CurrentValue.Invite?.Lobby?.Frontend?.BaseUrl;
+            if (!string.IsNullOrWhiteSpace(lobbyUrl)
+                && !context.Request.Path.StartsWithSegments(WellKnownPaths.InvitePathPrefix)
+                && !context.Request.Cookies.ContainsKey(Cookies.InviteToken))
+            {
+                logger.LogDebug("No tenant resolved for {Path}. Redirecting to lobby.", context.Request.Path);
+                context.Response.Redirect(lobbyUrl);
+                return;
+            }
+
             if (config.CurrentValue.TenantResolutions.Count > 0)
             {
                 logger.LogWarning("Could not resolve tenant for request {Path}. Returning 401.", context.Request.Path);
