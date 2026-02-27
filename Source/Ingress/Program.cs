@@ -10,7 +10,6 @@ using Cratis.Ingress.Tenancy;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 
@@ -25,6 +24,12 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<AuthenticationConfig>()
+    .BindConfiguration("Authentication")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 // ── Authentication ─────────────────────────────────────────────────────────
 // The ingress supports two authentication flows:
 //   • Interactive browser sessions via OIDC + cookie (default for frontends).
@@ -35,7 +40,6 @@ var authBuilder = builder.Services
     .AddAuthentication(options =>
     {
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
     })
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
@@ -43,18 +47,26 @@ var authBuilder = builder.Services
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
-        // When multiple OIDC providers are configured, redirect to the login
-        // selection page instead of directly challenging with a single provider.
+        // Redirect unauthenticated users to either the provider selection page
+        // (multiple providers) or directly to the single provider login endpoint.
         options.Events.OnRedirectToLogin = ctx =>
         {
-            var ingressConfig = ctx.HttpContext.RequestServices
-                .GetRequiredService<IOptionsMonitor<IngressConfig>>()
+            var authConfig = ctx.HttpContext.RequestServices
+                .GetRequiredService<IOptionsMonitor<AuthenticationConfig>>()
                 .CurrentValue;
 
-            if (ingressConfig.OidcProviders.Count > 1)
+            var returnUrl = ctx.Request.Path + ctx.Request.QueryString;
+
+            if (authConfig.OidcProviders.Count > 1)
             {
-                var returnUrl = ctx.Request.Path + ctx.Request.QueryString;
                 ctx.Response.Redirect($"{WellKnownPaths.LoginPage}?returnUrl={Uri.EscapeDataString(returnUrl)}");
+                return Task.CompletedTask;
+            }
+
+            if (authConfig.OidcProviders.Count == 1)
+            {
+                var schemeName = OidcProviderScheme.FromName(authConfig.OidcProviders[0].Name);
+                ctx.Response.Redirect($"{WellKnownPaths.LoginPrefix}/{schemeName}?returnUrl={Uri.EscapeDataString(returnUrl)}");
                 return Task.CompletedTask;
             }
 
@@ -63,26 +75,14 @@ var authBuilder = builder.Services
         };
     });
 
-// ── Single-provider OIDC (legacy / single-provider configuration) ──────────
-var oidcSection = builder.Configuration.GetSection("Authentication:OpenIdConnect");
-if (oidcSection.Exists())
-{
-    authBuilder.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-    {
-        oidcSection.Bind(options);
-        options.SaveTokens = true;
-        options.GetClaimsFromUserInfoEndpoint = true;
-    });
-}
-
-// ── Multi-provider OIDC (Ingress:OidcProviders) ────────────────────────────
+// ── OIDC providers (Authentication:OidcProviders) ──────────────────────────
 // Each provider is registered as its own OIDC scheme so that the ingress can
 // challenge with the correct one based on the provider the user selected.
-var multiProviders = builder.Configuration
-    .GetSection("Ingress:OidcProviders")
+var oidcProviders = builder.Configuration
+    .GetSection("Authentication:OidcProviders")
     .Get<List<OidcProviderConfig>>() ?? [];
 
-foreach (var provider in multiProviders)
+foreach (var provider in oidcProviders)
 {
     var schemeName = OidcProviderScheme.FromName(provider.Name);
     authBuilder.AddOpenIdConnect(schemeName, options =>
@@ -169,7 +169,7 @@ app.UseMiddleware<InviteMiddleware>();
 // ── OIDC providers endpoint ────────────────────────────────────────────────
 // Returns a JSON array of OidcProviderInfo objects that the login page uses to
 // render the list of available login options.
-app.MapGet(WellKnownPaths.Providers, (IOptionsMonitor<IngressConfig> config) =>
+app.MapGet(WellKnownPaths.Providers, (IOptionsMonitor<AuthenticationConfig> config) =>
 {
     var providers = config.CurrentValue.OidcProviders;
     var result = providers.Select(OidcProviderScheme.ToProviderInfo);

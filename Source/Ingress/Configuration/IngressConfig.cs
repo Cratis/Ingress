@@ -30,11 +30,4 @@ public class IngressConfig
     /// Microservices are keyed by a friendly name (e.g. "portal", "catalog").
     /// </summary>
     public IDictionary<string, MicroserviceConfig> Microservices { get; set; } = new Dictionary<string, MicroserviceConfig>();
-
-    /// <summary>
-    /// Gets or sets the list of OIDC providers available for login.
-    /// When more than one provider is configured the ingress redirects unauthenticated
-    /// browser requests to the login selection page instead of challenging directly.
-    /// </summary>
-    public IList<OidcProviderConfig> OidcProviders { get; set; } = [];
 }

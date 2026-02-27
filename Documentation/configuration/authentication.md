@@ -7,33 +7,34 @@ Ingress supports two authentication modes that can be active simultaneously:
 
 ---
 
-## Single OIDC provider
+## OIDC providers
 
-Bind a single OpenID Connect provider using the standard `Authentication:OpenIdConnect` section:
+Configure one or more OpenID Connect providers under `Authentication:OidcProviders`.
+
+**Single provider** – the ingress challenges unauthenticated browser requests directly with that provider:
 
 ```json
 {
   "Authentication": {
-    "OpenIdConnect": {
-      "Authority": "https://login.microsoftonline.com/<tenant-id>/v2.0",
-      "ClientId": "<client-id>",
-      "ClientSecret": "<client-secret>"
-    }
+    "OidcProviders": [
+      {
+        "Name": "Microsoft",
+        "Type": "Microsoft",
+        "Authority": "https://login.microsoftonline.com/<tenant-id>/v2.0",
+        "ClientId": "<client-id>",
+        "ClientSecret": "<client-secret>"
+      }
+    ]
   }
 }
 ```
 
----
-
-## Multiple OIDC providers
-
-When users can choose from more than one identity provider, list them under `Ingress:OidcProviders`.
-Ingress will redirect unauthenticated browser requests to a built-in provider-selection page
-(`/.cratis/select-provider`) instead of challenging with a single provider directly.
+**Multiple providers** – the ingress redirects unauthenticated browser requests to a built-in
+provider-selection page (`/.cratis/select-provider`) so the user can choose which provider to log in with:
 
 ```json
 {
-  "Ingress": {
+  "Authentication": {
     "OidcProviders": [
       {
         "Name": "Microsoft",
@@ -87,3 +88,4 @@ For machine-to-machine calls, configure a JWT Bearer handler:
   }
 }
 ```
+
