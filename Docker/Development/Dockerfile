@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ####################################
-# Cratis Ingress
+# Cratis AuthProxy
 # Build runtime image.
 ####################################
 
