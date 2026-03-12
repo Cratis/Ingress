@@ -83,7 +83,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            cratis/ingress:${{ needs.release.outputs.version }}
-            cratis/ingress:latest
+            cratis/authproxy:${{ needs.release.outputs.version }}
+            cratis/authproxy:latest
           build-args: |
             VERSION=${{ needs.release.outputs.version }}

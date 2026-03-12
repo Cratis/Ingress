@@ -61,6 +61,6 @@ jobs:
           context: .
           file: Docker/Development/Dockerfile
           push: false
-          tags: cratis/ingress:${{ needs.release.outputs.version }}
+          tags: cratis/authproxy:${{ needs.release.outputs.version }}
           build-args: |
             VERSION=${{ needs.release.outputs.version }}

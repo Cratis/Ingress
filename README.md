@@ -2,7 +2,7 @@
 
 ## Lightweight gateway service built with .NET
 
-[![Docker](https://img.shields.io/docker/v/cratis/ingress?label=Docker&logo=docker&sort=semver)](https://hub.docker.com/r/cratis/ingress)
+[![Docker](https://img.shields.io/docker/v/cratis/authproxy?label=Docker&logo=docker&sort=semver)](https://hub.docker.com/r/cratis/authproxy)
 [![C# Build](https://github.com/einari/ingress/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/einari/ingress/actions/workflows/dotnet-build.yml)
 [![Publish](https://github.com/einari/ingress/actions/workflows/publish.yml/badge.svg)](https://github.com/einari/ingress/actions/workflows/publish.yml)
 
